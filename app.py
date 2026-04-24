@@ -305,7 +305,5 @@ elif st.session_state.page == "routes":
     # -----------------------------
     # NAV BUTTONS
     # -----------------------------
-    if st.button("✅ Confirm Route"):
-        st.session_state.page = "confirm"
 
     st.button("⬅️ Back", on_click=go_to_select)
