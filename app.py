@@ -44,6 +44,7 @@ if "page" not in st.session_state:
 
 def go_to_select():
     st.session_state.page = "select"
+    st.session_state.selected_route = None
 
 def go_to_routes():
     st.session_state.page = "routes"
@@ -149,8 +150,16 @@ if st.session_state.page == "select":
 # -----------------------------
 elif st.session_state.page == "routes":
 
+    # Initialize selection state
     if "selected_route" not in st.session_state:
         st.session_state.selected_route = None
+
+    # Toggle helper (handles all button logic cleanly)
+    def toggle_route(route_name):
+        if st.session_state.selected_route == route_name:
+            st.session_state.selected_route = None
+        else:
+            st.session_state.selected_route = route_name
 
     st.title("Choose Your Route")
 
@@ -190,7 +199,12 @@ elif st.session_state.page == "routes":
     df_mild = route_to_df(mild_green)
     df_super = route_to_df(super_green)
 
-    # PathLayer builder
+    # Read current selection (updated via on_click BEFORE rerun)
+    selected = st.session_state.selected_route
+
+    # -----------------------------
+    # BUILD MAP LAYERS
+    # -----------------------------
     def make_layer(df, color, opacity=0.6, width=4):
         path = df[["lon", "lat"]].values.tolist()
         return pdk.Layer(
@@ -205,9 +219,6 @@ elif st.session_state.page == "routes":
             auto_highlight=True
         )
 
-    selected = st.session_state.selected_route
-
-    # Build layers based on selected route
     if selected == "fast":
         layers = [
             make_layer(df_fast, [255, 0, 0], opacity=1.0, width=7),
@@ -247,34 +258,54 @@ elif st.session_state.page == "routes":
         pitch=45,
     )
 
+    # -----------------------------
+    # MAP
+    # -----------------------------
     st.pydeck_chart(pdk.Deck(
         layers=layers,
         initial_view_state=view_state
     ))
 
-    # Stats
+    # -----------------------------
+    # STATS
+    # -----------------------------
     st.write(f"🔴 **Fastest Route:** {fast_dist:.1f} m — {time_from_meters(fast_dist)} min")
     st.write(f"🟢 **Mild Green Route:** {mild_dist:.1f} m — {time_from_meters(mild_dist)} min")
     st.write(f"🔵 **Super Green Route:** {super_dist:.1f} m — {time_from_meters(super_dist)} min")
 
-    # Buttons (click-to-select)
+    # Optional: show current selection
+    st.write(f"**Selected Route:** {selected if selected else 'None'}")
+
+    # -----------------------------
+    # BUTTONS (NOW BELOW STATS)
+    # -----------------------------
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("🔴 Preview Fastest"):
-            st.session_state.selected_route = "fast"
+        st.button(
+            "🔴 Preview Fastest",
+            on_click=toggle_route,
+            args=("fast",)
+        )
 
     with col2:
-        if st.button("🟢 Preview Mild Green"):
-            st.session_state.selected_route = "mild"
+        st.button(
+            "🟢 Preview Mild Green",
+            on_click=toggle_route,
+            args=("mild",)
+        )
 
     with col3:
-        if st.button("🔵 Preview Super Green"):
-            st.session_state.selected_route = "super"
+        st.button(
+            "🔵 Preview Super Green",
+            on_click=toggle_route,
+            args=("super",)
+        )
 
-    # Confirm button → goes to Page 3 (placeholder)
+    # -----------------------------
+    # NAV BUTTONS
+    # -----------------------------
     if st.button("✅ Confirm Route"):
         st.session_state.page = "confirm"
 
-    # Back button
     st.button("⬅️ Back", on_click=go_to_select)
