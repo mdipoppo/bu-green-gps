@@ -3,3 +3,8 @@ pandas
 pydeck
 osmnx
 networkx
+scikit-learn
+scipy
+rtree
+geopandas
+shapely
